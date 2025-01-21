@@ -1,10 +1,20 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, watch } from 'vue';
 
-const vidaJogador = ref(100);
-const vidaMonstro = ref(80);
+let vidaJogador = ref(100);
+let vidaMonstro = ref(100);
 
-const jogo = ref(false);
+let jogo = ref(false);
+
+let perdeu = ref(false);
+
+let ganhou = ref(false);
+
+let turnosDesdeEspecial = 4;
+
+function numeroAleatorio(min: number, max: number) {
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+}
 
 const jogoStart = () => {
     jogo.value = !jogo.value;
@@ -13,9 +23,51 @@ const jogoStart = () => {
 }
 
 const ataque = () => {
-    vidaJogador.value -= 10;
-    vidaMonstro.value -= 10;
+    const danoJogador = numeroAleatorio(5, 10); // Dano do jogador (entre 5 e 10)
+    const danoMonstro = numeroAleatorio(danoJogador, danoJogador + 5); // Garantir que o dano do monstro seja >= do jogador
+
+    vidaJogador.value -= danoMonstro;
+    vidaMonstro.value -= danoJogador;
+
+    console.log(`Dano do Jogador: ${danoJogador}`);
+    console.log(`Dano do Monstro: ${danoMonstro}`);
+
+    turnosDesdeEspecial++;
 }
+
+const ataqueEspecial = () => {
+
+    if (turnosDesdeEspecial < 4) {
+        alert('O ataque especial ainda não está disponivel');
+        return;
+    }
+
+    const danoMonstro = numeroAleatorio(5, 10);
+    const danoJogador = numeroAleatorio(danoMonstro, danoMonstro + 5);
+
+    vidaJogador.value -= danoMonstro;
+    vidaMonstro.value -= danoJogador;
+
+    console.log(`Dano do Jogador: ${danoJogador}`);
+    console.log(`Dano do Monstro: ${danoMonstro}`);
+
+    turnosDesdeEspecial = 0;
+}
+
+
+watch(vidaJogador, (novoValor, valorAntigo) => {
+    if (novoValor <= 0) {
+        jogo.value = true;
+        perdeu.value = true;
+    }
+});
+
+watch(vidaMonstro, (novoValor, valorAntigo) => {
+    if (novoValor <= 0) {
+        jogo.value = true;
+        ganhou.value = true;
+    }
+});
 
 </script>
 
@@ -50,17 +102,26 @@ const ataque = () => {
         </div>
     </div>
 
+    <div v-show="perdeu" class="m-10 p-10 border-2 flex justify-center text-4xl">
+        <div>Você perdeu! :(</div>
+    </div>
+
+    <div v-show="ganhou" class="m-10 p-10 border-2 flex justify-center text-4xl">
+        <div>Você ganhou! :)</div>
+    </div>
+
     <div class="m-10 p-10 border-2 flex justify-center text-4xl">
         <div v-if="!jogo" @click="jogoStart">Iniciar novo jogo</div>
 
         <div v-else-if="jogo" class="flex justify-center space-x-7">
             <div class="bg-red-600 hover:bg-red-700   p-4 rounded-lg text-white " @click="ataque">ATAQUE</div>
-            <div class="bg-amber-400 hover:bg-amber-500 p-4 rounded-lg ">ATAQUE ESPECIAL</div>
+            <div class="bg-amber-400 hover:bg-amber-500 p-4 rounded-lg " @click="ataqueEspecial">ATAQUE ESPECIAL</div>
             <div class="bg-lime-400 hover:bg-lime-500 p-4 rounded-lg text-white">CURAR</div>
             <div class="bg-gray-500 hover:bg-gray-600 p-4 rounded-lg " @click="jogoStart">DESISTIR</div>
         </div>
-
     </div>
+
+
 </template>
 
 <style scoped></style>
