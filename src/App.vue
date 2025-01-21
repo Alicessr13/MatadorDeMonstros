@@ -10,7 +10,7 @@ let perdeu = ref(false);
 
 let ganhou = ref(false);
 
-let turnosDesdeEspecial = 4;
+let turnosDesdeEspecial = 3;
 
 function numeroAleatorio(min: number, max: number) {
     return Math.floor(Math.random() * (max - min + 1)) + min;
@@ -20,6 +20,8 @@ const jogoStart = () => {
     jogo.value = !jogo.value;
     vidaJogador.value = 100;
     vidaMonstro.value = 100;
+    perdeu.value = false;
+    ganhou.value = false;
 }
 
 const ataque = () => {
@@ -37,7 +39,7 @@ const ataque = () => {
 
 const ataqueEspecial = () => {
 
-    if (turnosDesdeEspecial < 4) {
+    if (turnosDesdeEspecial < 3) {
         alert('O ataque especial ainda não está disponivel');
         return;
     }
@@ -48,24 +50,34 @@ const ataqueEspecial = () => {
     vidaJogador.value -= danoMonstro;
     vidaMonstro.value -= danoJogador;
 
+    console.log('Ataque especial');
     console.log(`Dano do Jogador: ${danoJogador}`);
     console.log(`Dano do Monstro: ${danoMonstro}`);
 
     turnosDesdeEspecial = 0;
 }
 
+const curar = () => {
+    const curaJogador = numeroAleatorio(6, 12); // Dano do jogador (entre 5 e 10)
+    const danoMonstro = numeroAleatorio(5, 10); // Garantir que o dano do monstro seja >= do jogador
 
-watch(vidaJogador, (novoValor, valorAntigo) => {
-    if (novoValor <= 0) {
-        jogo.value = true;
-        perdeu.value = true;
-    }
-});
+    vidaJogador.value -= danoMonstro;
+    vidaJogador.value += curaJogador;
 
-watch(vidaMonstro, (novoValor, valorAntigo) => {
-    if (novoValor <= 0) {
-        jogo.value = true;
+    console.log(`Cura jogador: ${curaJogador}`);
+    console.log(`Dano do Monstro: ${danoMonstro}`);
+
+    turnosDesdeEspecial++;
+}
+
+
+watch([vidaJogador, vidaMonstro ],([novoValorJogador, novoValorMonstro], []) => {
+    if (novoValorMonstro <= 0) {
+        jogo.value = false;
         ganhou.value = true;
+    } else if (novoValorJogador <= 0) {
+        jogo.value = false;
+        perdeu.value = true;
     }
 });
 
@@ -73,8 +85,8 @@ watch(vidaMonstro, (novoValor, valorAntigo) => {
 
 
 <template>
-    <div class="m-10 p-10 border-2 flex justify-center space-x-7">
-        <div id="jogador" class=" flex flex-col space-y-14 items-center border-2 w-1/2 justify-center">
+    <div class="m-10 p-10 shadow-lg flex justify-center space-x-7">
+        <div id="jogador" class=" flex flex-col space-y-14 items-center w-1/2 justify-center">
             <h1 class="text-6xl">Jogador</h1>
 
             <div class="w-full flex flex-col items-center">
@@ -87,7 +99,7 @@ watch(vidaMonstro, (novoValor, valorAntigo) => {
             </div>
 
         </div>
-        <div id="jogador" class=" flex flex-col space-y-14 items-center border-2 w-1/2 justify-center">
+        <div id="jogador" class=" flex flex-col space-y-14 items-center w-1/2 justify-center">
             <h1 class="text-6xl">Monstro</h1>
 
             <div class="w-full flex flex-col items-center">
@@ -102,21 +114,21 @@ watch(vidaMonstro, (novoValor, valorAntigo) => {
         </div>
     </div>
 
-    <div v-show="perdeu" class="m-10 p-10 border-2 flex justify-center text-4xl">
-        <div>Você perdeu! :(</div>
+    <div v-show="perdeu" class="m-10 p-10 shadow-lg flex justify-center text-4xl">
+        <div class="text-red-500 font-medium" >Você perdeu! :(</div>
     </div>
 
-    <div v-show="ganhou" class="m-10 p-10 border-2 flex justify-center text-4xl">
-        <div>Você ganhou! :)</div>
+    <div v-show="ganhou" class="m-10 p-10 shadow-lg flex justify-center text-4xl">
+        <div class="font-medium text-lime-500">Você ganhou! :)</div>
     </div>
 
-    <div class="m-10 p-10 border-2 flex justify-center text-4xl">
-        <div v-if="!jogo" @click="jogoStart">Iniciar novo jogo</div>
+    <div class="m-10 p-10 shadow-lg flex justify-center text-4xl">
+        <div v-if="!jogo" @click="jogoStart" class="bg-cyan-800 rounded-lg  p-4 text-white">Iniciar novo jogo</div>
 
         <div v-else-if="jogo" class="flex justify-center space-x-7">
             <div class="bg-red-600 hover:bg-red-700   p-4 rounded-lg text-white " @click="ataque">ATAQUE</div>
             <div class="bg-amber-400 hover:bg-amber-500 p-4 rounded-lg " @click="ataqueEspecial">ATAQUE ESPECIAL</div>
-            <div class="bg-lime-400 hover:bg-lime-500 p-4 rounded-lg text-white">CURAR</div>
+            <div class="bg-lime-400 hover:bg-lime-500 p-4 rounded-lg text-white" @click="curar">CURAR</div>
             <div class="bg-gray-500 hover:bg-gray-600 p-4 rounded-lg " @click="jogoStart">DESISTIR</div>
         </div>
     </div>
