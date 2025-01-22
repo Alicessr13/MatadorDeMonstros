@@ -1,8 +1,10 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue';
+import { computed, ref, watch } from 'vue';
 
 let vidaJogador = ref(100);
 let vidaMonstro = ref(100);
+const logsJogador = ref<string[]>([]);
+const logsMonstro = ref<string[]>([]);
 
 let jogo = ref(false);
 
@@ -16,12 +18,23 @@ function numeroAleatorio(min: number, max: number) {
     return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
+const adicionarLogJogador = (mensagem: string) => {
+    logsJogador.value.unshift(mensagem); // Adiciona o log no início da lista
+};
+
+const adicionarLogMonstro = (mensagem: string) => {
+    logsMonstro.value.unshift(mensagem); // Adiciona o log no início da lista
+};
+
 const jogoStart = () => {
     jogo.value = !jogo.value;
     vidaJogador.value = 100;
     vidaMonstro.value = 100;
     perdeu.value = false;
     ganhou.value = false;
+    logsJogador.value = [];
+    logsMonstro.value = [];
+    turnosDesdeEspecial = 3;
 }
 
 const ataque = () => {
@@ -35,6 +48,9 @@ const ataque = () => {
     console.log(`Dano do Monstro: ${danoMonstro}`);
 
     turnosDesdeEspecial++;
+
+    adicionarLogJogador(`Jogador causou ${danoJogador} de dano ao monstro.`);
+    adicionarLogMonstro(`Monstro causou ${danoMonstro} de dano ao jogador.`);
 }
 
 const ataqueEspecial = () => {
@@ -55,6 +71,9 @@ const ataqueEspecial = () => {
     console.log(`Dano do Monstro: ${danoMonstro}`);
 
     turnosDesdeEspecial = 0;
+
+    adicionarLogJogador(`Jogador usou ataque especial e causou ${danoJogador} de dano ao monstro.`);
+    adicionarLogMonstro(`Monstro causou ${danoMonstro} de dano ao jogador.`);
 }
 
 const curar = () => {
@@ -68,10 +87,29 @@ const curar = () => {
     console.log(`Dano do Monstro: ${danoMonstro}`);
 
     turnosDesdeEspecial++;
+
+    adicionarLogJogador(`Jogador usou curar e recebeu ${curaJogador} de cura.`);
+    adicionarLogMonstro(`Monstro causou ${danoMonstro} de dano ao jogador.`);
 }
 
+const logsIntercalados = computed(() => {
+    const intercalados = [];
+    const maxLength = Math.max(logsJogador.value.length, logsMonstro.value.length);
 
-watch([vidaJogador, vidaMonstro ],([novoValorJogador, novoValorMonstro], []) => {
+    for (let i = 0; i < maxLength; i++) {
+        if (logsMonstro.value[i]) {
+            intercalados.push({ tipo: 'monstro', mensagem: logsMonstro.value[i] });
+        }
+        if (logsJogador.value[i]) {
+            intercalados.push({ tipo: 'jogador', mensagem: logsJogador.value[i] });
+        }
+    }
+
+    return intercalados;
+});
+
+
+watch([vidaJogador, vidaMonstro], ([novoValorJogador, novoValorMonstro], []) => {
     if (novoValorMonstro <= 0) {
         jogo.value = false;
         ganhou.value = true;
@@ -115,7 +153,7 @@ watch([vidaJogador, vidaMonstro ],([novoValorJogador, novoValorMonstro], []) => 
     </div>
 
     <div v-show="perdeu" class="m-10 p-10 shadow-lg flex justify-center text-4xl">
-        <div class="text-red-500 font-medium" >Você perdeu! :(</div>
+        <div class="text-red-500 font-medium">Você perdeu! :(</div>
     </div>
 
     <div v-show="ganhou" class="m-10 p-10 shadow-lg flex justify-center text-4xl">
@@ -133,6 +171,14 @@ watch([vidaJogador, vidaMonstro ],([novoValorJogador, novoValorMonstro], []) => 
         </div>
     </div>
 
+    <div v-show="logsIntercalados.length > 0" class="m-10 p-10 shadow-lg flex justify-center text-4xl items-center">
+        <ul class="w-11/12">
+            <li v-for="(log, index) in logsIntercalados" :key="index"
+                :class="[log.tipo === 'jogador' ? 'bg-lime-500' : 'bg-red-500', 'p-4', 'm-4', 'text-white', 'w-full', 'rounded-lg', 'flex items-center flex-col']">
+                {{ log.mensagem }}
+            </li>
+        </ul>
+    </div>
 
 </template>
 
